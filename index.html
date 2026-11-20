@@ -107,8 +107,10 @@ main{padding-top:24px;padding-bottom:96px}
     function start() {
       if (current) current();
       el.classList.add('playing');
-      el.innerHTML = '<video src="' + p.video + '" poster="' + thumb(p) + '" controls autoplay playsinline></video>';
-      el.querySelector('video').play().catch(function () {});
+      el.innerHTML = '<video src="' + p.video + '" poster="' + thumb(p) + '" controls autoplay playsinline controlslist="nodownload" disablepictureinpicture></video>';
+      var pv = el.querySelector('video');
+      pv.oncontextmenu = function (e) { e.preventDefault(); }; // no right-click "Save video as"
+      pv.play().catch(function () {});
       current = function () { el.classList.remove('playing'); el.innerHTML = idle; bind(); };
     }
     bind();
