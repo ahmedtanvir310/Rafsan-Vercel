@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rafsan Haque Portfolio</title>
+<meta name="description" content="Video editing portfolio of Rafsan Haque: short form reels and long form videos.">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0a0a'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23c6f432'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#0a0a0a; --surface:#141414; --line:#262626;
+  --text:#fafafa; --text-muted:#8a8a8a; --lime:#c6f432;
+  --radius-md:16px; --radius-pill:999px;
+  --gutter:clamp(16px,4vw,48px);
+  --sans:Geist,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Geist Mono",ui-monospace,Menlo,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+img,video{display:block}
+:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.wrap{max-width:1200px;margin:0 auto;padding-left:var(--gutter);padding-right:var(--gutter)}
+
+/* Top bar: title left, tabs right */
+.nav{min-height:72px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px 24px;padding:12px 0}
+.wordmark{display:inline-flex;align-items:baseline;font-size:20px;font-weight:600;letter-spacing:-.045em;white-space:nowrap;margin:0}
+.dot{display:inline-block;width:.2em;height:.2em;margin-left:4px;border-radius:var(--radius-pill);background:var(--lime)}
+.tabs{display:flex;gap:8px}
+.tab{height:40px;padding:0 18px;border-radius:var(--radius-pill);border:1px solid var(--line);background:var(--surface);color:var(--text-muted);font:500 14px/1 var(--sans);cursor:pointer;transition:all .15s ease-out}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{background:var(--lime);border-color:var(--lime);color:var(--bg)}
+.tab b{font:400 12px/1 var(--mono);margin-left:6px;opacity:.6}
+
+/* Grids. A short last row sits in the centre. */
+main{padding-top:24px;padding-bottom:96px}
+.grid{display:flex;flex-wrap:wrap;justify-content:center;gap:32px 16px}
+.grid[hidden]{display:none}
+.grid.wide>.card{flex:0 0 calc((100% - 16px) / 2);min-width:0}
+.grid.tall>.card{flex:0 0 calc((100% - 48px) / 4);min-width:0}
+@media (max-width:900px){.grid.tall>.card{flex-basis:calc((100% - 32px) / 3)}}
+@media (max-width:640px){.grid.wide>.card{flex-basis:100%}.grid.tall>.card{flex-basis:calc((100% - 16px) / 2)}}
+.status{margin:64px 0;text-align:center;font:400 13px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+
+/* Video cards */
+.card{position:relative;overflow:hidden;border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--line);transition:border-color .15s ease-out}
+.card:hover{border-color:var(--text-muted)}
+.wide .card{aspect-ratio:16/9}.tall .card{aspect-ratio:9/16}
+.card>img,.card>video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card.playing{background:#000}
+.card.playing>video{object-fit:contain}
+.cover{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:none;cursor:pointer}
+.play{position:absolute;top:50%;left:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:var(--radius-pill);background:var(--text);display:grid;place-items:center;pointer-events:none;transition:transform .15s ease-out}
+.play svg{width:20px;height:20px;margin-left:3px}
+.card:hover .play{transform:scale(1.08)}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <nav class="nav">
+    <h1 class="wordmark">Rafsan Haque Portfolio<span class="dot"></span></h1>
+    <div class="tabs" role="tablist" aria-label="Video type">
+      <button class="tab" role="tab" id="tab-short" aria-controls="short" aria-selected="true" type="button">Short form<b id="n-short"></b></button>
+      <button class="tab" role="tab" id="tab-long" aria-controls="long" aria-selected="false" type="button">Long form<b id="n-long"></b></button>
+    </div>
+  </nav>
+</header>
+<main class="wrap">
+  <div class="grid tall" id="short" role="tabpanel" aria-labelledby="tab-short"></div>
+  <div class="grid wide" id="long" role="tabpanel" aria-labelledby="tab-long" hidden></div>
+  <p class="status" id="status">Loading videos…</p>
+</main>
+
+<script src="videos.js"></script>
+<script>
+(function () {
+  var PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="#0a0a0a"/></svg>';
+  var current = null;
+
+  // Thumbnail: a frame a quarter of the way into the video (skips logo intros)
+  function thumb(p) {
+    if (p.poster) return p.poster;
+    return p.video.replace('/upload/', '/upload/so_' + (p.at || '25p') + ',w_960,q_auto/').replace(/\.(mp4|mov|webm)$/i, '.jpg');
+  }
+
+  // Vertical or horizontal: from the list if known, otherwise from the thumbnail's shape
+  function shape(p) {
+    return new Promise(function (done) {
+      if (p.vertical === true || p.vertical === false) return done(p.vertical);
+      var im = new Image(), t = setTimeout(function () { done(null); }, 15000);
+      im.onload = function () { clearTimeout(t); done(im.naturalHeight > im.naturalWidth); };
+      im.onerror = function () { clearTimeout(t); done(null); };
+      im.src = thumb(p);
+    });
+  }
+
+  function card(p) {
+    var el = document.createElement('div');
+    el.className = 'card';
+    var idle = '<img src="' + thumb(p) + '" alt="Video edited by Rafsan Haque" loading="lazy">' +
+      '<button class="cover" type="button" aria-label="Play video"></button><span class="play">' + PLAY + '</span>';
+    el.innerHTML = idle;
+    function bind() { el.querySelector('.cover').addEventListener('click', start); }
+    function start() {
+      if (current) current();
+      el.classList.add('playing');
+      el.innerHTML = '<video src="' + p.video + '" poster="' + thumb(p) + '" controls autoplay playsinline></video>';
+      el.querySelector('video').play().catch(function () {});
+      current = function () { el.classList.remove('playing'); el.innerHTML = idle; bind(); };
+    }
+    bind();
+    return el;
+  }
+
+  var list = (window.VIDEOS || []).filter(function (p) { return p && p.video; });
+  var short = document.getElementById('short'), long = document.getElementById('long');
+  Promise.all(list.map(shape)).then(function (vert) {
+    list.forEach(function (p, i) {
+      if (vert[i] === null) return; // thumbnail would not load: leave it out
+      (vert[i] ? short : long).appendChild(card(p));
+    });
+    document.getElementById('n-short').textContent = short.children.length;
+    document.getElementById('n-long').textContent = long.children.length;
+    document.getElementById('status').hidden = true;
+  });
+
+  // Tabs. The address remembers the open tab (#long), so a link can open straight to it.
+  var tabs = { short: document.getElementById('tab-short'), long: document.getElementById('tab-long') };
+  function show(which) {
+    if (current) { current(); current = null; }
+    ['short', 'long'].forEach(function (k) {
+      tabs[k].setAttribute('aria-selected', k === which ? 'true' : 'false');
+      document.getElementById(k).hidden = k !== which;
+    });
+  }
+  tabs.short.onclick = function () { show('short'); history.replaceState(null, '', location.pathname); };
+  tabs.long.onclick = function () { show('long'); history.replaceState(null, '', '#long'); };
+  if (location.hash === '#long') show('long');
+})();
+</script>
+</body>
+</html>
